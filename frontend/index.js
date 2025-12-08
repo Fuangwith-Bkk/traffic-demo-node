@@ -1,54 +1,56 @@
-// frontend/index.js
 const express = require('express');
 const axios = require('axios');
 const app = express();
 const PORT = 3000;
 
-// Use environment variable for backend URL, default to localhost for local testing
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
-// 1. INGRESS DEMO: You load this page
+// 1. INGRESS: Updated UI with Status Code Buttons
 app.get('/', (req, res) => {
     res.send(`
         <div style="font-family: sans-serif; padding: 40px; text-align: center;">
             <h1 style="color: #2c3e50;">Frontend Container</h1>
-            <p style="color: green; font-weight: bold;">✔ Ingress Successful (You reached me!)</p>
+            <p style="color: green; font-weight: bold;">✔ Ingress Successful</p>
             <hr>
-            <p>Click the button below to test Container-to-Container traffic:</p>
-            <a href="/test-connection">
-                <button style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Call Backend</button>
-            </a>
+            <h3>Test Egress Status Codes:</h3>
+            <p>Click a button to tell the Backend to fetch a specific code from the Internet:</p>
+            
+            <a href="/test-status/200"><button style="background: #e1f7d5; padding: 10px;">Send 200 (Success)</button></a>
+            <a href="/test-status/404"><button style="background: #fff4e5; padding: 10px;">Send 404 (Not Found)</button></a>
+            <a href="/test-status/418"><button style="background: #e0f7fa; padding: 10px;">Send 418 (Teapot)</button></a>
+            <a href="/test-status/500"><button style="background: #ffebee; padding: 10px;">Send 500 (Server Error)</button></a>
         </div>
     `);
 });
 
-// 2. CONTAINER-TO-CONTAINER DEMO: Frontend calls Backend
-app.get('/test-connection', async (req, res) => {
+// 2. CONTAINER-TO-CONTAINER: Proxy the status code request
+app.get('/test-status/:code', async (req, res) => {
+    const code = req.params.code;
     try {
-        console.log(`Frontend: Calling backend at ${BACKEND_URL}...`);
+        console.log(`Frontend: Asking backend to fetch status ${code}...`);
         
-        // This is the INTERNAL traffic (Container -> Container)
-        const response = await axios.get(`${BACKEND_URL}/external-data`);
+        // Call the Backend's new endpoint
+        const response = await axios.get(`${BACKEND_URL}/external-status/${code}`);
 
+        // Display the JSON nicely
         res.send(`
             <div style="font-family: sans-serif; padding: 40px;">
-                <h1>Communication Result</h1>
-                <h3>✅ Backend Responded!</h3>
-                <p><strong>Raw Data from Backend:</strong></p>
-                <pre style="background: #f4f4f4; padding: 15px; border-radius: 5px;">${JSON.stringify(response.data, null, 2)}</pre>
+                <h1>Result for Status ${code}</h1>
+                <p><strong>Frontend</strong> asked <strong>Backend</strong> to ask <strong>Internet</strong>.</p>
+                <div style="background: #333; color: #fff; padding: 15px; border-radius: 5px;">
+                    <pre>${JSON.stringify(response.data, null, 2)}</pre>
+                </div>
                 <br>
                 <a href="/">Go Back</a>
             </div>
         `);
     } catch (error) {
-        console.error("Frontend Error:", error.message);
+        // Handle case where Backend itself is down
         res.send(`
-            <div style="font-family: sans-serif; padding: 40px;">
-                <h1 style="color: red;">❌ Communication Failed</h1>
-                <p>Could not reach Backend at: <code>${BACKEND_URL}</code></p>
-                <p>Error details: ${error.message}</p>
-                <a href="/">Go Back</a>
-            </div>
+            <h1 style="color: red;">Communication Error</h1>
+            <p>Could not talk to Backend.</p>
+            <pre>${error.message}</pre>
+            <a href="/">Go Back</a>
         `);
     }
 });
