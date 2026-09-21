@@ -21,6 +21,12 @@ app.use(express.json());
 const identity = () => ({ source: "Backend Container", version: VERSION, hostname: os.hostname() });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Health endpoint for Kubernetes probes: never delayed or failed by the chaos settings,
+// so a "chaotic" pod stays Ready and keeps receiving traffic (the mesh must handle it).
+app.get('/healthz', (req, res) => {
+    res.json({ status: "ok" });
+});
+
 // Change failure/delay settings of THIS pod at runtime: /admin/chaos?fail=50&delay=2000
 // (the admin endpoint itself is never delayed or failed)
 app.get('/admin/chaos', (req, res) => {
@@ -30,7 +36,7 @@ app.get('/admin/chaos', (req, res) => {
     res.json({ ...identity(), fail_rate: failRate, delay_ms: delayMs });
 });
 
-// Apply the simulated delay/failure to every other request
+// Apply the simulated delay/failure to every other request (not /healthz or /admin/chaos above)
 app.use(async (req, res, next) => {
     if (delayMs > 0) await sleep(delayMs);
     if (failRate > 0 && Math.random() * 100 < failRate) {

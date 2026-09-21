@@ -46,6 +46,11 @@ const page = (title, status, data) => `
     </div>
 `;
 
+// Health endpoint for Kubernetes probes
+app.get('/healthz', (req, res) => {
+    res.json({ status: "ok" });
+});
+
 // 1. INGRESS: UI with buttons
 app.get('/', (req, res) => {
     res.send(`

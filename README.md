@@ -11,6 +11,7 @@ Browser -> frontend (:3000) -> backend (:3001) -> https://httpbin.org
 | Path | Description |
 |---|---|
 | `/` | UI with buttons |
+| `/healthz` | Probe endpoint |
 | `/call-backend`, `/api/info` | Calls backend `/info` (in-mesh only, no Internet) |
 | `/test-status/:code`, `/api/external-status/:code` | Asks backend to fetch `/status/:code` from the external API |
 
@@ -21,7 +22,8 @@ Env: `BACKEND_URL` (default `http://localhost:3001`). The frontend forwards trac
 
 | Path | Description |
 |---|---|
-| `/` | Health check |
+| `/` | Status (affected by chaos settings) |
+| `/healthz` | Probe endpoint, never delayed or failed |
 | `/info` | Returns version and hostname (no egress) |
 | `/external-data` | Egress: `GET {EXTERNAL_API_BASE}/uuid` |
 | `/external-status/:code` | Egress: `GET {EXTERNAL_API_BASE}/status/:code` |
